@@ -133,16 +133,18 @@ Validate that a Spring to Quarkus migration is correct and complete. Runs valida
 
 - `project-setup`: project structure, no Spring annotations or dependencies, Quarkus BOM and plugin, `mvn compile`
 - `persistence`: missing entities, field mismatches, ID strategy changes, relationship differences, and compilation (Maven or Gradle)
+- `service`: service layer migration for the given `strategy` (leftover Spring DI annotations, context types, `@Transactional`, `@Scheduled`, `@Async`, `@Configuration`/`@Bean`, Spring Boot main class and runners; `quarkus-spring-*` dependencies for `spring-compat`; bean and scheduled-method parity with the source). Test sources are excluded
 - `ui`: view layer migration for the given `uiMigrationType` (legacy view technology removed, Qute, FreeMarker or MyFaces setup, template locations, static resources, CSRF tokens, view parity, Quarkus build)
 
 | Parameter | Required | Default | Description |
 |---|---|---|---|
 | `target` | yes | | Path to the migrated Quarkus project to validate |
-| `source` | for `persistence`, `ui` and `all` | | Path to the original Spring project |
-| `validator` | no | `all` | Validator to run: `project-setup`, `persistence`, `ui`, or `all` |
+| `source` | for `persistence`, `service`, `ui` and `all` | | Path to the original Spring project |
+| `validator` | no | `all` | Validator to run: `project-setup`, `persistence`, `service`, `ui`, or `all` |
 | `skipCompile` | no | `false` | Skip the build check |
 | `parser` | no | `treesitter` | Java parser to use: `treesitter` (default) or `javaparser` |
 | `uiMigrationType` | for `ui` | | UI migration type(s), comma-separated for projects mixing view technologies (e.g. `thymeleaf-qute,jsp-qute`). With `all`, the `ui` validator only runs when it is set |
+| `strategy` | for `service` | | Migration strategy for the `service` validator: `full-quarkus` or `spring-compat`. With `all`, the `service` validator only runs when this is set |
 
 UI migration types: `jsp-qute`, `thymeleaf-qute`, `freemarker-qute`, `freemarker-quarkus` (FreeMarker preserved with `quarkus-freemarker`), `jsf-qute`, `jsf-myfaces` (JSF preserved with MyFaces). A view technology is either migrated to Qute or preserved, so `freemarker-qute` cannot be combined with `freemarker-quarkus`, nor `jsf-qute` with `jsf-myfaces`.
 

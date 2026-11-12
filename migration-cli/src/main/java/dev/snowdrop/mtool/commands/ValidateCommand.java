@@ -6,8 +6,10 @@ import dev.snowdrop.mtool.scanner.analyzer.JavaAnalyzer;
 import dev.snowdrop.mtool.scanner.analyzer.JavaParserAnalyzer;
 import dev.snowdrop.mtool.scanner.analyzer.TreeSitterAnalyzer;
 import dev.snowdrop.mtool.validate.project.ProjectSetupValidator;
+import dev.snowdrop.mtool.validate.MigrationStrategy;
 import dev.snowdrop.mtool.validate.Validator;
 import dev.snowdrop.mtool.validate.persistence.PersistenceValidator;
+import dev.snowdrop.mtool.validate.service.ServiceValidator;
 import dev.snowdrop.mtool.validate.ui.UiMigrationType;
 import dev.snowdrop.mtool.validate.ui.UiValidator;
 import org.aesh.command.Command;
@@ -36,7 +38,7 @@ public class ValidateCommand implements Command<CommandInvocation> {
     private static final String BOLD = "\u001B[1m";
     private static final String RESET = "\u001B[0m";
 
-    @Arguments(description = "Validator to run (e.g. project-setup, persistence, ui) and path to the project to validate", required = true)
+    @Arguments(description = "Validator to run (e.g. project-setup, persistence, service, ui) and path to the project to validate", required = true)
     public List<String> arguments;
 
     @Option(shortName = 'v', name = "verbose", hasValue = false, description = "Enable verbose output")
@@ -45,8 +47,11 @@ public class ValidateCommand implements Command<CommandInvocation> {
     @Option(name = "skip-compile", hasValue = false, description = "Skip the build check")
     public boolean skipCompile;
 
-    @Option(name = "spring-project", description = "Path to the original Spring project (required for persistence and ui validators)")
+    @Option(name = "spring-project", description = "Path to the original Spring project (required for persistence, service and ui validators)")
     public String springProjectPath;
+
+    @Option(name = "strategy", description = "Migration strategy (required for service validator): full-quarkus or spring-compat")
+    public String strategy;
 
     @Option(name = "ui-type", description = "UI migration type(s) (required for ui validator): jsp-qute, thymeleaf-qute, freemarker-qute, freemarker-quarkus, jsf-qute or jsf-myfaces. "
             + "Use a comma-separated list for projects mixing view technologies")
@@ -100,6 +105,23 @@ public class ValidateCommand implements Command<CommandInvocation> {
         } else if ("persistence".equals(validatorName)) {
             logger.error("--spring-project is required for the persistence validator");
             return null;
+        }
+
+        if ("service".equals(validatorName)) {
+            if (strategy == null || strategy.isBlank()) {
+                logger.error("--strategy is required for the service validator (full-quarkus or spring-compat)");
+                return null;
+            }
+            if (springProjectPath == null) {
+                logger.error("--spring-project is required for the service validator");
+                return null;
+            }
+            MigrationStrategy migrationStrategy = MigrationStrategy.parse(strategy).orElse(null);
+            if (migrationStrategy == null) {
+                logger.errorf("Unknown strategy: %s (use full-quarkus or spring-compat)", strategy);
+                return null;
+            }
+            validators.add(new ServiceValidator(resolveAnalyzer(), resolvePath(springProjectPath), migrationStrategy));
         }
 
         if ("ui".equals(validatorName)) {

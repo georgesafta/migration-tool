@@ -236,21 +236,24 @@ Validate that a Spring-to-Quarkus migration is correct and complete. Available v
 
 - **project-setup** — checks that the project compiles and has the expected structure
 - **persistence** — compares JPA entities between the original Spring project and the migrated Quarkus project to detect missing entities, field mismatches, ID strategy changes, and relationship differences. It also compiles the migrated project, with Maven or Gradle (Maven wins when both build files exist)
+- **service** — verifies the service layer migration for the required `--strategy` (`full-quarkus` or `spring-compat`). It checks that Spring DI annotations (`@Service`, `@Autowired`, `@Value`, ...), context types, `@Transactional`, `@Scheduled`, `@Async`, `@Configuration`/`@Bean`, the Spring Boot main class and runners are gone (for `spring-compat`: only usages the `quarkus-spring-*` extensions cannot handle, plus the presence of those extensions), and that every source bean and scheduled method has a counterpart in the target. Test sources are excluded
 - **ui** — verifies the view layer migration for the selected `--ui-type`: `jsp-qute`, `thymeleaf-qute`, `freemarker-qute`, `freemarker-quarkus` (FreeMarker preserved with `quarkus-freemarker`), `jsf-qute` or `jsf-myfaces`. Use a comma-separated list (e.g. `thymeleaf-qute,jsp-qute`) for projects mixing view technologies. It checks removal of the legacy view technology, the Qute (or FreeMarker/MyFaces) setup, `@CheckedTemplate` template locations, message bundles, static resources, CSRF tokens and source/target view parity
 
 ```shell
 Usage: mtool validate [-v] [--skip-compile] [--parser=<parser>]
                       [--spring-project=<springProjectPath>]
-                      [--ui-type=<uiType>]
+                      [--strategy=<strategy>] [--ui-type=<uiType>]
                       <validatorName> <appPath>
 Validate that a migration is correct and complete
-      <validatorName>       Validator to run (e.g. project-setup, persistence, ui)
+      <validatorName>       Validator to run (e.g. project-setup, persistence, service, ui)
       <appPath>             Path to the project to validate
       --parser=<parser>     Java parser to use: treesitter (default) or javaparser
       --skip-compile        Skip the build check
       --spring-project=<springProjectPath>
                             Path to the original Spring project
-                              (required for persistence and ui validators)
+                              (required for persistence, service and ui validators)
+      --strategy=<strategy> Migration strategy (required for service
+                              validator): full-quarkus or spring-compat
       --ui-type=<uiType>    UI migration type(s) (required for ui validator):
                               jsp-qute, thymeleaf-qute, freemarker-qute,
                               freemarker-quarkus, jsf-qute or jsf-myfaces.
@@ -261,6 +264,7 @@ Validate that a migration is correct and complete
 Example:
 ```shell
 mtool validate persistence ./applications/spring-jpa-crud-quarkus --spring-project ./applications/spring-jpa-crud
+mtool validate service <quarkus-project> --spring-project ./applications/spring-boot-todo-app --strategy full-quarkus
 mtool validate ui <quarkus-project> --spring-project ./applications/spring-boot-todo-app --ui-type thymeleaf-qute
 ```
 
